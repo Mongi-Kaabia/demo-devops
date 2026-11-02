@@ -34,6 +34,7 @@ public class Produit {
     @Column(name = "categorie", length = 100)
     private String categorie;
 
+    @Builder.Default
     @Column(name = "actif")
     private Boolean actif = true;
 

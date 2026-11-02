@@ -1,3 +1,4 @@
+
 package com.beedigital.beestore.service;
 
 import com.beedigital.beestore.dto.ProduitRequestDTO;
@@ -29,42 +30,96 @@ class ProduitServiceImplTest {
     @InjectMocks
     private ProduitServiceImpl produitService;
 
+    // CREATION
+
     @Test
-    @DisplayName("creerProduit() doit sauvegarder et retourner le produit créé")
-    void creerProduit_doitSauvegarderEtRetournerLeProduit() {
-        // GIVEN
-        ProduitRequestDTO requestDTO = new ProduitRequestDTO();
-        requestDTO.setNom("Laptop Pro");
-        requestDTO.setPrix(1299.99);
-        requestDTO.setStock(10);
+    @DisplayName("Créer un produit avec actif null : actif doit être true par défaut")
+    void creerProduit_actifNull_doitEtreActifParDefaut() {
+        ProduitRequestDTO dto = new ProduitRequestDTO();
+        dto.setNom("Laptop");
+        dto.setDescription("Ordinateur portable");
+        dto.setPrix(1299.99);
+        dto.setStock(10);
+        dto.setCategorie("Informatique");
 
-        Produit produitSauvegarde = Produit.builder()
-                .id(1L).nom("Laptop Pro").prix(1299.99).stock(10).actif(true)
-                .build();
-        when(produitRepository.save(any(Produit.class))).thenReturn(produitSauvegarde);
+        when(produitRepository.save(any(Produit.class))).thenAnswer(invocation -> {
+            Produit produit = invocation.getArgument(0);
+            produit.setId(1L);
+            return produit;
+        });
 
-        // WHEN
-        ProduitResponseDTO resultat = produitService.creerProduit(requestDTO);
+        ProduitResponseDTO resultat = produitService.creerProduit(dto);
 
-        // THEN
         assertThat(resultat.getId()).isEqualTo(1L);
-        assertThat(resultat.getNom()).isEqualTo("Laptop Pro");
-        verify(produitRepository, times(1)).save(any(Produit.class));
+        assertThat(resultat.getNom()).isEqualTo("Laptop");
+        assertThat(resultat.getActif()).isTrue();
+
+        verify(produitRepository).save(any(Produit.class));
     }
 
     @Test
-    @DisplayName("getProduitById() doit retourner le produit s'il existe")
+    @DisplayName("Créer un produit en conservant actif à false")
+    void creerProduit_actifFalse_doitConserverFalse() {
+        ProduitRequestDTO dto = new ProduitRequestDTO();
+        dto.setNom("Clavier");
+        dto.setActif(false);
+
+        when(produitRepository.save(any(Produit.class))).thenAnswer(invocation -> {
+            Produit produit = invocation.getArgument(0);
+            produit.setId(2L);
+            return produit;
+        });
+
+        ProduitResponseDTO resultat = produitService.creerProduit(dto);
+
+        assertThat(resultat.getActif()).isFalse();
+    }
+
+    // LECTURE
+
+    @Test
+    @DisplayName("Récupérer tous les produits")
+    void getTousProduits_doitRetournerListeDeDTO() {
+        when(produitRepository.findAll()).thenReturn(List.of(
+                Produit.builder().id(1L).nom("Laptop").build(),
+                Produit.builder().id(2L).nom("Souris").build()
+        ));
+
+        List<ProduitResponseDTO> resultat = produitService.getTousProduits();
+
+        assertThat(resultat).hasSize(2);
+        assertThat(resultat).extracting(ProduitResponseDTO::getNom)
+                .containsExactly("Laptop", "Souris");
+    }
+
+    @Test
+    @DisplayName("Retourner une liste vide si aucun produit")
+    void getTousProduits_aucunProduit_doitRetournerListeVide() {
+        when(produitRepository.findAll()).thenReturn(List.of());
+
+        List<ProduitResponseDTO> resultat = produitService.getTousProduits();
+
+        assertThat(resultat).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Récupérer un produit existant par son ID")
     void getProduitById_produitExistant_doitRetournerLeProduit() {
-        Produit produit = Produit.builder().id(1L).nom("Laptop Pro").build();
+        Produit produit = Produit.builder()
+                .id(1L)
+                .nom("Laptop")
+                .build();
+
         when(produitRepository.findById(1L)).thenReturn(Optional.of(produit));
 
         ProduitResponseDTO resultat = produitService.getProduitById(1L);
 
-        assertThat(resultat.getNom()).isEqualTo("Laptop Pro");
+        assertThat(resultat.getId()).isEqualTo(1L);
+        assertThat(resultat.getNom()).isEqualTo("Laptop");
     }
 
     @Test
-    @DisplayName("getProduitById() doit lever ProduitNotFoundException si absent")
+    @DisplayName("Lever une exception si le produit est absent")
     void getProduitById_produitAbsent_doitLeverException() {
         when(produitRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -73,37 +128,182 @@ class ProduitServiceImplTest {
                 .hasMessageContaining("99");
     }
 
+    // MODIFICATION
+
     @Test
-    @DisplayName("supprimerProduit() doit lever une exception si le produit n'existe pas")
+    @DisplayName("Modifier un produit existant")
+    void modifierProduit_produitExistant_doitModifierLeProduit() {
+        Produit produit = Produit.builder()
+                .id(1L)
+                .nom("Ancien nom")
+                .actif(false)
+                .build();
+
+        ProduitRequestDTO dto = new ProduitRequestDTO();
+        dto.setNom("Nouveau nom");
+        dto.setDescription("Nouvelle description");
+        dto.setPrix(500.0);
+        dto.setStock(20);
+        dto.setCategorie("Informatique");
+        dto.setActif(true);
+
+        when(produitRepository.findById(1L)).thenReturn(Optional.of(produit));
+        when(produitRepository.save(any(Produit.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProduitResponseDTO resultat = produitService.modifierProduit(1L, dto);
+
+        assertThat(resultat.getNom()).isEqualTo("Nouveau nom");
+        assertThat(resultat.getDescription()).isEqualTo("Nouvelle description");
+        assertThat(resultat.getPrix()).isEqualTo(500.0);
+        assertThat(resultat.getStock()).isEqualTo(20);
+        assertThat(resultat.getCategorie()).isEqualTo("Informatique");
+        assertThat(resultat.getActif()).isTrue();
+
+        verify(produitRepository).save(produit);
+    }
+
+    @Test
+    @DisplayName("Conserver la valeur de actif si elle est null lors de la modification")
+    void modifierProduit_actifNull_doitConserverAncienneValeur() {
+        Produit produit = Produit.builder()
+                .id(1L)
+                .nom("Laptop")
+                .actif(false)
+                .build();
+
+        ProduitRequestDTO dto = new ProduitRequestDTO();
+        dto.setNom("Laptop modifié");
+        dto.setActif(null);
+
+        when(produitRepository.findById(1L)).thenReturn(Optional.of(produit));
+        when(produitRepository.save(any(Produit.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProduitResponseDTO resultat = produitService.modifierProduit(1L, dto);
+
+        assertThat(resultat.getActif()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Lever une exception si le produit à modifier est absent")
+    void modifierProduit_produitAbsent_doitLeverException() {
+        ProduitRequestDTO dto = new ProduitRequestDTO();
+
+        when(produitRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> produitService.modifierProduit(99L, dto))
+                .isInstanceOf(ProduitNotFoundException.class)
+                .hasMessageContaining("99");
+
+        verify(produitRepository, never()).save(any(Produit.class));
+    }
+
+    // SUPPRESSION
+
+    @Test
+    @DisplayName("Supprimer un produit existant")
+    void supprimerProduit_produitExistant_doitSupprimerLeProduit() {
+        when(produitRepository.existsById(1L)).thenReturn(true);
+
+        produitService.supprimerProduit(1L);
+
+        verify(produitRepository).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("Lever une exception si le produit à supprimer est absent")
     void supprimerProduit_produitAbsent_doitLeverException() {
         when(produitRepository.existsById(42L)).thenReturn(false);
 
         assertThatThrownBy(() -> produitService.supprimerProduit(42L))
                 .isInstanceOf(ProduitNotFoundException.class);
 
-        verify(produitRepository, never()).deleteById(any());
+        verify(produitRepository, never()).deleteById(anyLong());
     }
 
-    @Test
-    @DisplayName("getTousProduits() doit retourner la liste mappée en DTO")
-    void getTousProduits_doitRetournerListeDeDTO() {
-        when(produitRepository.findAll()).thenReturn(List.of(
-                Produit.builder().id(1L).nom("A").build(),
-                Produit.builder().id(2L).nom("B").build()
-        ));
+    // RECHERCHE PAR CATEGORIE
 
-        List<ProduitResponseDTO> resultat = produitService.getTousProduits();
+    @Test
+    @DisplayName("Rechercher les produits par catégorie")
+    void rechercherParCategorie_doitRetournerLesProduits() {
+        when(produitRepository.findByCategorieIgnoreCase("Informatique"))
+                .thenReturn(List.of(
+                        Produit.builder().id(1L).nom("Laptop").build(),
+                        Produit.builder().id(2L).nom("Souris").build()
+                ));
+
+        List<ProduitResponseDTO> resultat =
+                produitService.rechercherParCategorie("Informatique");
 
         assertThat(resultat).hasSize(2);
     }
+
     @Test
-    @DisplayName("getProduitsEnRuptureDeStock() ne doit retourner que les produits à stock 0")
+    @DisplayName("Retourner une liste vide si la catégorie ne contient aucun produit")
+    void rechercherParCategorie_aucunResultat_doitRetournerListeVide() {
+        when(produitRepository.findByCategorieIgnoreCase("Inconnue"))
+                .thenReturn(List.of());
+
+        List<ProduitResponseDTO> resultat =
+                produitService.rechercherParCategorie("Inconnue");
+
+        assertThat(resultat).isEmpty();
+    }
+
+    // RECHERCHE PAR NOM
+
+    @Test
+    @DisplayName("Rechercher les produits par nom")
+    void rechercherParNom_doitRetournerLesProduits() {
+        when(produitRepository.findByNomContainingIgnoreCase("Lap"))
+                .thenReturn(List.of(
+                        Produit.builder().id(1L).nom("Laptop").build()
+                ));
+
+        List<ProduitResponseDTO> resultat =
+                produitService.rechercherParNom("Lap");
+
+        assertThat(resultat).hasSize(1);
+        assertThat(resultat.get(0).getNom()).isEqualTo("Laptop");
+    }
+
+    @Test
+    @DisplayName("Retourner une liste vide si aucun nom ne correspond")
+    void rechercherParNom_aucunResultat_doitRetournerListeVide() {
+        when(produitRepository.findByNomContainingIgnoreCase("Inconnu"))
+                .thenReturn(List.of());
+
+        List<ProduitResponseDTO> resultat =
+                produitService.rechercherParNom("Inconnu");
+
+        assertThat(resultat).isEmpty();
+    }
+
+    // RUPTURE DE STOCK
+
+    @Test
+    @DisplayName("Récupérer les produits en rupture de stock")
     void getProduitsEnRuptureDeStock_doitFiltrerParStock() {
         when(produitRepository.findByStock(0)).thenReturn(List.of(
                 Produit.builder().id(1L).nom("Souris").stock(0).build()
         ));
-        List<ProduitResponseDTO> resultat = produitService.getProduitsEnRuptureDeStock();
+
+        List<ProduitResponseDTO> resultat =
+                produitService.getProduitsEnRuptureDeStock();
+
         assertThat(resultat).hasSize(1);
         assertThat(resultat.get(0).getStock()).isZero();
+    }
+
+    @Test
+    @DisplayName("Retourner une liste vide si aucun produit en rupture de stock")
+    void getProduitsEnRuptureDeStock_aucunProduit_doitRetournerListeVide() {
+        when(produitRepository.findByStock(0)).thenReturn(List.of());
+
+        List<ProduitResponseDTO> resultat =
+                produitService.getProduitsEnRuptureDeStock();
+
+        assertThat(resultat).isEmpty();
     }
 }
