@@ -1,178 +1,168 @@
-Projet Spring Boot avec JaCoCo - Documentation
-Objectif du Projet
+# BeeStore — API REST de gestion des produits
 
-L'objectif de ce projet est d'intégrer JaCoCo (un outil de couverture de code) dans une application Spring Boot en utilisant Maven. Ce guide documente les étapes nécessaires pour configurer Maven, Spring Boot et JaCoCo, puis générer un rapport de couverture de code après l'exécution des tests.
+## Présentation
 
-Étape 1 : Configuration du Projet Maven
+BeeStore est une application backend développée avec Java et Spring Boot. Elle expose une API REST permettant de gérer les produits : création, consultation, modification, suppression et recherche par nom ou catégorie.
 
-Initialisation du Projet Maven
+L’API utilise une architecture organisée en couches afin de séparer les contrôleurs, les services, l’accès aux données et les objets de transfert.
 
-Tout d'abord, créez un projet Spring Boot avec Maven. Vous pouvez utiliser Spring Initializr ou un projet Maven existant. Le fichier clé pour la configuration de Maven est le pom.xml.
+## Technologies utilisées
 
-Configurer les Dépendances et Plugins dans le pom.xml
+- **Java 17**
+- **Spring Boot 3.5.6**
+- Spring Web — création de l’API REST
+- Spring Data JPA — persistance des données
+- Hibernate — mapping objet-relationnel
+- H2 — base de données en mémoire pour le développement
+- MySQL — base de données prévue pour la production
+- Swagger / OpenAPI — documentation et test de l’API
+- Jakarta Bean Validation — validation des données
+- Lombok — réduction du code répétitif
+- Maven — gestion des dépendances et construction du projet
+- JUnit / Spring Boot Test — tests
+- JaCoCo — mesure de la couverture des tests
+- Spring Boot Actuator — supervision et vérification de santé
 
-Ajoutez les dépendances nécessaires pour Spring Boot, JaCoCo, et les autres outils de développement et de tests :
+## Fonctionnalités
 
-<dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.11</version>
-    </dependency>
-</dependencies>
+- Création d’un produit.
+- Consultation de tous les produits.
+- Consultation d’un produit par son identifiant.
+- Modification d’un produit existant.
+- Suppression d’un produit.
+- Recherche des produits par nom ou catégorie.
+- Validation des données entrantes.
+- Gestion centralisée des exceptions.
+- Documentation interactive de l’API avec Swagger.
+- Endpoint de santé pour la supervision de l’application.
 
+## Structure du projet
 
-Configurer les Propriétés Java
+```text
+src/
+├── main/
+│   ├── java/com/beedigital/beestore/
+│   │   ├── config/       # Configuration Swagger
+│   │   ├── controller/   # Endpoints REST
+│   │   ├── dto/          # Objets de requête et de réponse
+│   │   ├── entity/       # Entités JPA
+│   │   ├── exception/    # Gestion des exceptions
+│   │   ├── repository/   # Accès aux données
+│   │   ├── service/      # Logique métier
+│   │   └── BeeStoreApplication.java
+│   └── resources/
+│       ├── application.properties
+│       ├── application-dev.properties
+│       └── application-prod.properties
+└── test/
+    └── java/             # Tests automatisés
+```
 
-Dans la section <properties>, assurez-vous de spécifier la version de Java utilisée pour le projet :
+## Prérequis
 
-<properties>
-    <java.version>17</java.version>
-</properties>
+- JDK 17 ou version compatible avec le projet.
+- Maven, ou le Maven Wrapper si celui-ci est présent dans le dépôt.
+- Git pour récupérer le projet.
 
-Étape 2 : Ajouter et Configurer le Plugin JaCoCo
+## Installation et lancement
 
-Ajouter JaCoCo au pom.xml
+### 1. Récupérer le projet
 
-Ajoutez la configuration du plugin JaCoCo dans la section <build> du pom.xml :
+```bash
+git clone https://github.com/Mongi-Kaabia/demo-devops.git
+cd demo-devops
+```
 
-<build>
-    <plugins>
-        <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.11</version>
-            <executions>
-                <execution>
-                    <id>prepare-agent</id>
-                    <goals>
-                        <goal>prepare-agent</goal>
-                    </goals>
-                    <configuration>
-                        <propertyName>surefireArgLine</propertyName>
-                        <destFile>${project.build.directory}/jacoco.exec</destFile>
-                    </configuration>
-                </execution>
+### 2. Lancer l’application
 
-                <execution>
-                    <id>report</id>
-                    <phase>verify</phase>
-                    <goals>
-                        <goal>report</goal>
-                    </goals>
-                </execution>
+Depuis le dossier du projet, avec Maven installé :
 
-                <execution>
-                    <id>check</id>
-                    <phase>verify</phase>
-                    <goals>
-                        <goal>check</goal>
-                    </goals>
-                    <configuration>
-                        <rules>
-                            <rule>
-                                <element>BUNDLE</element>
-                                <limits>
-                                    <limit>
-                                        <counter>INSTRUCTION</counter>
-                                        <value>COVEREDRATIO</value>
-                                        <minimum>0.50</minimum>
-                                    </limit>
-                                    <limit>
-                                        <counter>BRANCH</counter>
-                                        <value>COVEREDRATIO</value>
-                                        <minimum>0.30</minimum>
-                                    </limit>
-                                </limits>
-                            </rule>
-                        </rules>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
+```bash
+mvn spring-boot:run
+```
 
+L’application utilise par défaut le profil `dev` et le port `8080`.
 
-Cette configuration prépare JaCoCo pour les tests et génère un rapport après chaque exécution de tests.
+### 3. Accéder aux interfaces
 
-Étape 3 : Exécution des Tests et Génération du Rapport JaCoCo
+- **Swagger UI :** http://localhost:8080/swagger-ui/index.html
+- **Documentation OpenAPI JSON :** http://localhost:8080/api-docs
+- **Console H2 :** http://localhost:8080/h2-console
+- **Santé de l’application :** http://localhost:8080/actuator/health
 
-Exécuter les Tests et Générer le Rapport
+Si l’URL Swagger habituelle ne fonctionne pas, essayer également http://localhost:8080/swagger-ui.html.
 
-Exécutez la commande suivante pour exécuter les tests et générer le rapport JaCoCo :
+### 4. Configuration de la console H2
 
-mvn clean install
+En développement, les paramètres configurés sont :
 
+- JDBC URL : `jdbc:h2:mem:beestore_dev`
+- Username : `sa`
+- Password : laisser vide
 
-Cela va :
+La base H2 est en mémoire et le schéma est recréé à chaque démarrage. Les données de développement ne sont donc pas conservées après l’arrêt de l’application.
 
-Nettoyer le projet,
+## Endpoints de l’API
 
-Compiler et tester le projet,
+La base des routes est `/api/v1/produits`.
 
-Générer un fichier de couverture de code jacoco.exec.
+| Méthode | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v1/produits` | Créer un produit |
+| GET | `/api/v1/produits` | Récupérer tous les produits |
+| GET | `/api/v1/produits/{id}` | Récupérer un produit par ID |
+| PUT | `/api/v1/produits/{id}` | Modifier un produit |
+| DELETE | `/api/v1/produits/{id}` | Supprimer un produit |
+| GET | `/api/v1/produits/search?nom=...` | Rechercher par nom |
+| GET | `/api/v1/produits/search?categorie=...` | Rechercher par catégorie |
 
-Accéder au Rapport JaCoCo
+### Exemple de création d’un produit
 
-Le rapport généré sera dans le dossier target/site/jacoco/index.html. Ouvrez ce fichier dans votre navigateur pour consulter le rapport de couverture de code.
+Requête `POST /api/v1/produits` :
 
-Étape 4 : Vérification du Seuil de Couverture
+```json
+{
+  "nom": "Clavier mécanique",
+  "description": "Clavier mécanique USB",
+  "prix": 129.99,
+  "stock": 15,
+  "categorie": "Informatique",
+  "actif": true
+}
+```
 
-Vérifier le Seuil Minimum de Couverture
+Le nom, le prix et le stock sont obligatoires. Le prix doit être strictement positif, le stock doit être supérieur ou égal à zéro, et le nom doit contenir entre 2 et 100 caractères.
 
-Le plugin JaCoCo peut vérifier si le projet atteint un certain seuil de couverture de code. Si le seuil est violé, la commande Maven échouera.
+Le champ `dateCreation` est renseigné automatiquement lors de la création du produit.
 
-Voici comment configurer les seuils dans le plugin JaCoCo pour les instructions et les branches :
+## Profils de configuration
 
-<execution>
-    <id>check</id>
-    <phase>verify</phase>
-    <goals>
-        <goal>check</goal>
-    </goals>
-    <configuration>
-        <rules>
-            <rule>
-                <element>BUNDLE</element>
-                <limits>
-                    <limit>
-                        <counter>INSTRUCTION</counter>
-                        <value>COVEREDRATIO</value>
-                        <minimum>0.50</minimum> <!-- Seuil de couverture des instructions -->
-                    </limit>
-                    <limit>
-                        <counter>BRANCH</counter>
-                        <value>COVEREDRATIO</value>
-                        <minimum>0.30</minimum> <!-- Seuil de couverture des branches -->
-                    </limit>
-                </limits>
-            </rule>
-        </rules>
-    </configuration>
-</execution>
+### Développement (`dev`)
 
+- Base H2 en mémoire.
+- Console H2 activée.
+- Schéma recréé au démarrage.
 
-Résoudre les Erreurs de Couverture
+### Production (`prod`)
 
-Si les tests ne couvrent pas suffisamment de code, vous devrez ajouter des tests supplémentaires pour atteindre les seuils spécifiés.
+Le profil de production utilise MySQL. Il nécessite la configuration des variables d’environnement suivantes :
 
-Conclusion
+- `DB_URL`
+- `DB_USERNAME`
+- `DB_PASSWORD`
 
-Voici un guide détaillé sur la manière d'intégrer JaCoCo dans un projet Spring Boot à l'aide de Maven. Ce guide couvre l'ajout des dépendances nécessaires, la configuration de JaCoCo, et la génération des rapports de couverture de code. En suivant ces étapes, vous pourrez vous assurer que votre code est bien testé et couvert à un niveau adéquat.
+Ne placez pas de mots de passe ou d’identifiants sensibles directement dans le dépôt Git.
 
+## Tests
 
-<img width="1919" height="395" alt="image" src="https://github.com/user-attachments/assets/dda1af61-3f94-4e0c-ac21-c42e37e2ccde" />
+Pour exécuter les tests automatisés :
+
+```bash
+mvn test
+```
+
+Le projet inclut JaCoCo pour générer un rapport de couverture des tests.
+
+## Licence
+
+Aucune licence spécifique n’a été confirmée pour ce projet.

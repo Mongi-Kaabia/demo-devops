@@ -1,6 +1,8 @@
 package com.beedigital.beestore.repository;
 
+import com.beedigital.beestore.dto.ProduitResponseDTO;
 import com.beedigital.beestore.entity.Produit;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,5 +26,6 @@ public interface ProduitRepository extends JpaRepository<Produit, Long> {
     List<Produit> findByPrixBetween(@Param("min") Double min,
                                     @Param("max") Double max);
 
-}
 
+    List<Produit> findByStock(Integer stock);
+}
